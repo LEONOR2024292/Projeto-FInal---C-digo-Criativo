@@ -1,73 +1,94 @@
 
-let img;
-let fragmentos = [];
-let espacamento = 12;
+let cores;
+let indiceCor = 0;
+let tempoCor = 0;
+let corAtual;
+let corSeguinte;
 
-function preload() {
-  img = loadImage("memoria.jpg");
-}
+let tempo = 0;
 
 function setup() {
   createCanvas(800, 600);
 
-  img.resize(width, height);
-  img.loadPixels();
+  background(15, 15, 25);
+  colorMode(RGB);
+  noFill();
 
-  // Criar fragmentos a partir dos píxeis da imagem
-  for (let y = 0; y < height; y += espacamento) {
-    for (let x = 0; x < width; x += espacamento) {
+  cores = [
+    color(150, 0, 255),   // Roxo
+    color(255, 220, 0),   // Amarelo
+    color(0, 220, 100),   // Verde
+    color(255, 100, 0),   // Laranja
+    color(255, 0, 150),   // Rosa
+    color(0, 100, 255)    // Azul
+  ];
 
-      let indice = 4 * (y * img.width + x);
-
-      let r = img.pixels[indice];
-      let g = img.pixels[indice + 1];
-      let b = img.pixels[indice + 2];
-
-      fragmentos.push({
-        x: x,
-        y: y,
-        cor: color(r, g, b),
-        tamanho: random(4, 8),
-        deslocamento: random(15, 40)
-      });
-    }
-  }
-
-  noStroke();
+  corAtual = cores[0];
+  corSeguinte = cores[1];
 }
 
 function draw() {
-  background(15, 15, 25);
 
-  for (let f of fragmentos) {
+  // Mudança automática de cores
+  tempoCor += 3;
 
-    let distancia = dist(mouseX, mouseY, f.x, f.y);
+  if (tempoCor >= 100) {
+    tempoCor = 0;
 
-    let xFinal = f.x;
-    let yFinal = f.y;
+    indiceCor = (indiceCor + 1) % cores.length;
 
-    if (distancia < 150) {
-
-      let angulo = atan2(f.y - mouseY, f.x - mouseX);
-
-      let intensidade = map(distancia, 0, 150, 1, 0);
-
-      xFinal += cos(angulo) * f.deslocamento * intensidade;
-      yFinal += sin(angulo) * f.deslocamento * intensidade;
-    }
-
-    fill(f.cor);
-    circle(xFinal, yFinal, f.tamanho);
+    corAtual = cores[indiceCor];
+    corSeguinte = cores[(indiceCor + 1) % cores.length];
   }
 
-  fill(255, 180);
-  textSize(12);
-  textAlign(LEFT);
-  text("MEMÓRIA EM FRAGMENTOS", 20, height - 25);
+  let cor = lerpColor(
+    corAtual,
+    corSeguinte,
+    tempoCor / 100
+  );
+
+  // Desaparecimento gradual dos vestígios
+  noStroke();
+  fill(15, 15, 25, 5);
+  rect(0, 0, width, height);
+
+  tempo += 0.03;
+
+  // Criar linhas ao movimentar o rato
+  if (mouseX !== pmouseX || mouseY !== pmouseY) {
+
+    for (let i = 0; i < 12; i++) {
+
+      let deslocamento = map(i, 0, 11, -30, 30);
+
+      stroke(cor);
+      strokeWeight(map(i, 0, 11, 1, 3));
+
+      beginShape();
+
+      for (let t = 0; t <= 1; t += 0.1) {
+
+        let x = lerp(pmouseX, mouseX, t);
+        let y = lerp(pmouseY, mouseY, t);
+
+        // Criar ondulação orgânica
+        let onda = sin(t * 10 + tempo + i) * 15;
+
+        x += onda;
+        y += deslocamento + cos(t * 8 + tempo + i) * 15;
+
+        splineVertex(x, y);
+      }
+
+      endShape();
+    }
+  }
 }
 
-function mousePressed() {
-  for (let f of fragmentos) {
-    f.deslocamento = random(20, 80);
+// Tecla C limpa a composição
+function keyPressed() {
+
+  if (key === "c" || key === "C") {
+    background(15, 15, 25);
   }
 }
